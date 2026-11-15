@@ -1,0 +1,41 @@
+{
+  "round": 1,
+  "reviewer": "code-reviewer",
+  "commit": "fb078be3ba8e161701e8ca7784259caa241eaf1e",
+  "builder_post": 14,
+  "gate": {"command": "IFOCUS_SBX_OUT=/tmp/ifocus-cr scripts/sbx.sh test", "result": "54 tests in 17 suites passed", "warnings": 0},
+  "probes": {
+    "source": "~/.gemini/jetski/brain/18342d6b-008a-40b6-8c3c-57130d197f10/scratch/probe/main.swift",
+    "P1": "AXWindowMatcher with IDs present, target absent -> ambiguous(index: 0, count: 2)",
+    "P2": "1-in-6 outliers on neighbour terminal -> no commit in 3 s; control commits at 0.45 s",
+    "P3": "FocusCoordinator start(); stop() -> estimator starts=1 stops=1 streamStillLive=true"
+  },
+  "verdict": "no_p0",
+  "counts": {"P0": 0, "P1": 4, "P2": 10, "P3": 10},
+  "findings": [
+    {"id": "CR-01", "severity": "P1", "axis": "concurrency", "file": "Sources/iFocusCore/Engine/FocusCoordinator.swift", "lines": "120-156", "title": "start/stop race leaves camera running after pause/lock; start during stop hangs stop()", "evidence": "probe P3", "fix": "run-generation token; stop estimator if generation changed after start(); remove isRunning=true at line 136; await captured task"},
+    {"id": "CR-02", "severity": "P1", "axis": "memory", "file": "Sources/iFocusCore/Engine/FocusCoordinator.swift", "lines": "42,182,196,223,236", "title": "unbounded decisionLog growth (~1.7M entries/day at 20 fps)", "fix": "ring buffer or opt-in logging; test cap"},
+    {"id": "CR-03", "severity": "P1", "axis": "ux_safety", "file": "Sources/iFocusMac/UI/CalibrationOverlay.swift", "lines": "160-164,208-240", "title": "screenSaver-level overlay on all displays; Esc only honoured on next frame; no camera interruption events or watchdog", "fix": "Esc stops estimator; no-frame watchdog; session interruption/runtime-error/disconnect observers yielding .interrupted; visible Cancel button"},
+    {"id": "CR-04", "severity": "P1", "axis": "concurrency", "file": "Sources/iFocusMac/Focus/AXActuator.swift", "lines": "20-28,41-69", "title": "AX messaging timeout set only on app element; window-element calls use ~6 s default and can stall the coordinator", "evidence": "AXUIElement.h:389-390", "fix": "set 0.25 s timeout on every window element; overall ladder deadline ~1 s"},
+    {"id": "CR-05", "severity": "P2", "axis": "same_pid_matching", "file": "Sources/iFocusCore/Targeting/AXWindowMatcher.swift", "lines": "9-37", "title": "ID-aware matching falls back to geometry and picks a window with a different known ID", "evidence": "probe P1", "fix": "geometric steps only over windowID==nil candidates; else .notFound"},
+    {"id": "CR-06", "severity": "P2", "axis": "ux_safety", "file": "Sources/iFocusCore/Engine/LadderFocusSwitcher.swift", "lines": "33-75", "title": "failed ladder leaves focus on unintended window; no rollback", "fix": "restore initial focused window on final failure; flash amber; sim test"},
+    {"id": "CR-07", "severity": "P2", "axis": "ux_dwell", "file": "Sources/iFocusCore/Engine/FocusDecisionEngine.swift", "lines": "97-105", "title": "single outlier on neighbouring eligible window resets dwell (starvation at shared edges)", "evidence": "probe P2", "fix": "challenger timer: replace pending only after candidateDropoutSeconds of challenger support"},
+    {"id": "CR-08", "severity": "P2", "axis": "correctness", "file": "Sources/iFocusMac/Windows/CGWindowCatalogService.swift", "lines": "68-70", "title": "verification checks CG z-order not key window; focusedWindowID ignores size", "fix": "also verify app kAXFocusedWindowAttribute window ID; skip sub-eligible windows"},
+    {"id": "CR-09", "severity": "P2", "axis": "performance", "file": "Sources/iFocusCore/Engine/FocusCoordinator.swift", "lines": "189-193,260-283", "title": "20 Hz status publishing: per-frame TCC queries, menu title sets and NSImage allocation on main", "fix": "publish on change; cache permissions at 1 Hz; icon on pause change only"},
+    {"id": "CR-10", "severity": "P2", "axis": "correctness", "file": "Sources/iFocusMac/Windows/CGWindowCatalogService.swift", "lines": "8,39-47", "title": "per-PID bundle ID cache never invalidated; PID reuse inherits allowlisted bundle", "fix": "per-snapshot cache or key by (pid, launchDate) with termination eviction"},
+    {"id": "CR-11", "severity": "P2", "axis": "ux_typing_lock", "file": "Sources/iFocusCore/Engine/FocusDecisionEngine.swift", "lines": "138-155", "title": "typing hold commits immediately when typing pauses (copy-from-reference workflow); plan-level", "fix": "require fresh dwell after typing hold lifts; update T27/T37 with Deviations entry"},
+    {"id": "CR-12", "severity": "P2", "axis": "robustness", "file": "Sources/iFocusMac/Gaze/CameraSession.swift", "lines": "118-192", "title": "no camera interruption/recovery in run mode; menu stays Running on dead stream", "fix": "emit .interrupted, publish .error, retry with backoff"},
+    {"id": "CR-13", "severity": "P2", "axis": "concurrency", "file": "Sources/iFocusMac/Gaze/VisionGazeEstimator.swift", "lines": "45-57", "title": "estimator re-entry overwrites continuation without finish (orphaned consumer)", "fix": "finish old continuation before replacing (also CameraSession.swift:123-127)"},
+    {"id": "CR-14", "severity": "P2", "axis": "test_coverage", "file": "Sources/iFocusApp/IFocusCLI.swift", "lines": "19,38,44", "title": "--run lifecycle (NSApp.run inside MainActor.run under async main, shutdown) untested", "fix": "add lifecycle smoke step to section 14 checklist; consider sync main for agent modes"},
+    {"id": "CR-15", "severity": "P3", "axis": "plan_conformance", "file": "Sources/iFocusCore/Engine/LadderFocusSwitcher.swift", "lines": "28,61", "title": "rung C adds setAppFrontmost; staleCandidate set for any refusal", "fix": "align with plan 4.8 or record deviation; typed refusal"},
+    {"id": "CR-16", "severity": "P3", "axis": "test_quality", "file": "Sources/iFocusCore/Simulation/ScenarioRunner.swift", "lines": "247-256,271", "title": "runPrepared bypasses ladder and hard-codes .switched; seed: 0 in result", "fix": "route through LadderFocusSwitcher + SimFocusActuator; pass seed"},
+    {"id": "CR-17", "severity": "P3", "axis": "test_quality", "file": "Tests/iFocusCoreTests/EngineTests.swift", "lines": "365-417", "title": "T51 coordinator half lacks positive control", "fix": "add unperturbed run expecting one switcher call"},
+    {"id": "CR-18", "severity": "P3", "axis": "performance", "file": "Sources/iFocusMac/Gaze/FrameProcessor.swift", "lines": "38-42", "title": "min-interval decimation yields 15 fps from 30 fps camera at cameraFPS=20", "fix": "accumulator-based decimation"},
+    {"id": "CR-19", "severity": "P3", "axis": "robustness", "file": "Sources/iFocusMac/Gaze/CameraSession.swift", "lines": "170-182", "title": "frame duration set against pre-preset activeFormat and unlocked before startRunning", "fix": "set after commit and hold lock across startRunning, or rely on decimation"},
+    {"id": "CR-20", "severity": "P3", "axis": "concurrency_policy", "file": "Sources/iFocusCore/Simulation/SimServices.swift", "lines": "4-6", "title": "nonisolated(unsafe) sidesteps invariant I4 intent", "fix": "declare explicit exception or extend I4 grep"},
+    {"id": "CR-21", "severity": "P3", "axis": "correctness", "file": "Sources/iFocusMac/Gaze/FrameProcessor.swift", "lines": "165-175", "title": "de-roll sign convention unverified", "fix": "derive angle from eye-corner line or add on-desk tilt check"},
+    {"id": "CR-22", "severity": "P3", "axis": "ux", "file": "Sources/iFocusMac/App/AppController.swift", "lines": "279-322", "title": "calibration unpauses a user-paused agent", "fix": "restore prior pause state"},
+    {"id": "CR-23", "severity": "P3", "axis": "hit_testing", "file": "Sources/iFocusCore/Targeting/WindowHitTester.swift", "lines": "31-37", "title": "snap ignores nearer non-eligible windows", "fix": "snap only if nearest window overall is eligible"},
+    {"id": "CR-24", "severity": "P3", "axis": "same_pid_matching", "file": "Sources/iFocusCore/Targeting/AXWindowMatcher.swift", "lines": "23-26", "title": "(a) public-mode ambiguous may raise hidden native tab; (b) HUD re-flash cut short by in-flight fade (HUDController.swift:73-95)", "fix": "(a) refuse ambiguous when CG shows >1 same-frame on-screen window; (b) reset alpha inside zero-duration animation group"}
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "round": 3,
+  "reviewer": "code-reviewer",
+  "commit": "778bf7dde4bff60fb23a91a7a19a41454e165646",
+  "builder_post": 34,
+  "gates": {
+    "test": {"command": "IFOCUS_SBX_OUT=/tmp/ifocus-cr-r3 ./scripts/sbx.sh test", "result": "93 tests in 17 suites passed", "warnings": 0},
+    "invariants": "I1-I9 passed",
+    "simulate": "8/8 PASS"
+  },
+  "verdict": "no_p0_p1_p2",
+  "counts": {"P0": 0, "P1": 0, "P2": 0, "P3": 4},
+  "verified": {
+    "quiet_then_dwell": "typing->clear (FocusTypes.swift:68); modifier-held (SafetyPolicy.swift:66); input classes per AW3; defaults/ranges per plan; mismatch alert retired",
+    "universal_focus": "isBundleAllowed fail-closed + prefixes + exclusions + scope (Config.swift:290-300); self-exclusion; frontmost uses isHardBlocked",
+    "cross_pid_ladder": "rung B/C raise-forward-raise, 8 vs 3 polls, frontmostPID+focusedWindowID+keyWindow verification, one re-match on stale (LadderFocusSwitcher.swift:34-45,79-104)",
+    "test_edits": "assertion edits confined to T26,T27,T33,T35,T36,T37,T58,T72; others fixture swap or rename only"
+  },
+  "carryover": {
+    "CR2-03/TRG2-02": "closed (LadderFocusSwitcher.swift:138-139)",
+    "CR2-02/TRG2-01": "open, out of scope; exposure raised by allApps (CR3-03)",
+    "CR2-04/TRG2-03": "open, out of scope",
+    "CR2-01/DEF-03": "deferred_v2",
+    "CR2-05/DEF-04": "deferred_v2"
+  },
+  "findings": [
+    {"id": "CR3-01", "severity": "P3", "axis": "test_quality", "file": "Tests/iFocusCoreTests/SafetyTests.swift", "lines": "143-145", "title": "new timing assertions are lower-bound only (T27 >=6.25 in 7.0 s run; T37 >=5.05; T35 widened to 2.0 s vs measured 1.20-1.55)", "fix": "add upper bounds expected+2 frames; tighten T35 to <=1.6"},
+    {"id": "CR3-02", "severity": "P3", "axis": "ux_diagnosability", "file": "Sources/iFocusMac/UI/StatusMenuController.swift", "lines": "112", "title": "pointerActive lacks the 'Waiting for input to go quiet' cue; jittery pointer can stall switching silently with 2.0 s move lock", "fix": "label pointerActive the same; README troubleshooting note"},
+    {"id": "CR3-03", "severity": "P3", "axis": "robustness", "file": "Sources/iFocusMac/Focus/AXActuator.swift", "lines": "10,31-60", "title": "TRG2-01 all-or-nothing AX enumeration budget has higher exposure under allApps (multi-window browsers/editors)", "fix": "IDs-first early exit, geometry only for nil-ID, partial list on budget"},
+    {"id": "CR3-04", "severity": "P3", "axis": "ux_safety", "file": "Sources/iFocusCore/Targeting/WindowHitTester.swift", "lines": "5-13", "title": "allApps eligibility has no AXStandardWindow subrole gate; helper/transparent layer-0 windows can become activation targets", "fix": "prefer AXStandardWindow (or nil) subrole in ladder match under allApps; desk census via --doctor"}
+  ]
+}
