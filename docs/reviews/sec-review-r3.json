@@ -1,0 +1,281 @@
+{
+  "schema_version": "1",
+  "producer": "security-review",
+  "mode": "repo",
+  "summary": "Round 3 (Wave 2) security review and regression audit of commit 778bf7d verified 0 open P0-P3 vulnerabilities across universal allApps window targeting, 2.5s quiet + 1.2/1.5s fresh dwell input gating, cross-PID AX focus ladder, GitHub Actions workflows (ci.yml and pr-guardian.yml), and public-repo documentation, with all 8 prior security findings (SEC-001..SEC-008) remaining fixed without regression.",
+  "inspected": [
+    ".gitignore",
+    ".github/workflows/ci.yml",
+    ".github/workflows/pr-guardian.yml",
+    "CONTRIBUTING.md",
+    "DESIGN.md",
+    "LICENSE",
+    "Package.swift",
+    "README.md",
+    "SECURITY.md",
+    "Resources/Info.plist",
+    "Resources/iFocus.entitlements",
+    "scripts/sbx.sh",
+    "scripts/bundle-app.sh",
+    "scripts/check-invariants.sh",
+    "scripts/check-scripts.sh",
+    "Sources/iFocusApp/IFocusCLI.swift",
+    "Sources/iFocusCore/Calibration/CalibrationMapper.swift",
+    "Sources/iFocusCore/Calibration/CalibrationProfile.swift",
+    "Sources/iFocusCore/Calibration/CalibrationSession.swift",
+    "Sources/iFocusCore/Calibration/CalibrationSolver.swift",
+    "Sources/iFocusCore/Calibration/RidgeSolver.swift",
+    "Sources/iFocusCore/Engine/FocusCoordinator.swift",
+    "Sources/iFocusCore/Engine/FocusDecisionEngine.swift",
+    "Sources/iFocusCore/Engine/FocusPipeline.swift",
+    "Sources/iFocusCore/Engine/LadderFocusSwitcher.swift",
+    "Sources/iFocusCore/Engine/SafetyPolicy.swift",
+    "Sources/iFocusCore/Engine/WatchedStream.swift",
+    "Sources/iFocusCore/Filter/EyeGeometry.swift",
+    "Sources/iFocusCore/Filter/FrameDecimator.swift",
+    "Sources/iFocusCore/Filter/GazeFeaturePipeline.swift",
+    "Sources/iFocusCore/Filter/OneEuroFilter.swift",
+    "Sources/iFocusCore/Geometry/CoordinateSpace.swift",
+    "Sources/iFocusCore/Model/Config.swift",
+    "Sources/iFocusCore/Model/DisplayTypes.swift",
+    "Sources/iFocusCore/Model/FocusTypes.swift",
+    "Sources/iFocusCore/Model/GazeTypes.swift",
+    "Sources/iFocusCore/Model/InputTypes.swift",
+    "Sources/iFocusCore/Model/SessionActivity.swift",
+    "Sources/iFocusCore/Model/WindowTypes.swift",
+    "Sources/iFocusCore/Protocols/Services.swift",
+    "Sources/iFocusCore/Simulation/Presets.swift",
+    "Sources/iFocusCore/Simulation/Scenario.swift",
+    "Sources/iFocusCore/Simulation/ScenarioRunner.swift",
+    "Sources/iFocusCore/Simulation/SeededRNG.swift",
+    "Sources/iFocusCore/Simulation/SimRig.swift",
+    "Sources/iFocusCore/Simulation/SimServices.swift",
+    "Sources/iFocusCore/Simulation/SyntheticUser.swift",
+    "Sources/iFocusCore/Storage/ConfigStore.swift",
+    "Sources/iFocusCore/Storage/ProfileStore.swift",
+    "Sources/iFocusCore/Storage/SecureFileStore.swift",
+    "Sources/iFocusCore/Targeting/AXWindowMatcher.swift",
+    "Sources/iFocusCore/Targeting/WindowClassifier.swift",
+    "Sources/iFocusCore/Targeting/WindowHitTester.swift",
+    "Sources/iFocusMac/App/AppController.swift",
+    "Sources/iFocusMac/App/Doctor.swift",
+    "Sources/iFocusMac/App/Permissions.swift",
+    "Sources/iFocusMac/App/SystemClock.swift",
+    "Sources/iFocusMac/Display/CGDisplayTopologyService.swift",
+    "Sources/iFocusMac/Focus/AXActuator.swift",
+    "Sources/iFocusMac/Focus/AXWindowID.swift",
+    "Sources/iFocusMac/Gaze/CameraSession.swift",
+    "Sources/iFocusMac/Gaze/FrameProcessor.swift",
+    "Sources/iFocusMac/Gaze/VisionGazeEstimator.swift",
+    "Sources/iFocusMac/Input/SystemInputActivityProvider.swift",
+    "Sources/iFocusMac/Input/SystemSessionStateProvider.swift",
+    "Sources/iFocusMac/UI/CalibrationOverlay.swift",
+    "Sources/iFocusMac/UI/HUDController.swift",
+    "Sources/iFocusMac/UI/HotKeyController.swift",
+    "Sources/iFocusMac/UI/StatusMenuController.swift",
+    "Sources/iFocusMac/Windows/CGWindowCatalogService.swift",
+    "Tests/iFocusCoreTests/ConfigTests.swift",
+    "Tests/iFocusCoreTests/CoordinatorTests.swift",
+    "Tests/iFocusCoreTests/EngineTests.swift",
+    "Tests/iFocusCoreTests/HitTestTests.swift",
+    "Tests/iFocusCoreTests/LadderTests.swift",
+    "Tests/iFocusCoreTests/SafetyTests.swift",
+    "Tests/iFocusCoreTests/ScenarioTests.swift",
+    "Tests/iFocusCoreTests/TestDoubles.swift",
+    "gitleaks",
+    "actionlint",
+    "zizmor"
+  ],
+  "not_inspected": [
+    {
+      "what": "semgrep",
+      "reason": "exit 2: Called from Dune__exe__Main.(fun) in file \"src/main/Main.ml\", line 114, characters 22-35 | Called from Pyro_caml_instruments.maybe_with_memprof_sampler in file \"lib/Pyro_caml_instruments.ml\" (inlined), line 114, characters 49-53 | Called from Dune__exe__Main in file \"src/main/Main.ml\", lines 105-127"
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-001",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-807",
+      "title": "Webcam and AX tracking reactivate while locked on screen-wake or spoofed DistributedNotification",
+      "file": "Sources/iFocusMac/Input/SystemSessionStateProvider.swift",
+      "start_line": 26,
+      "end_line": 195,
+      "rationale": "Remains closed in Round 3: `SystemSessionStateProvider` gates session activity strictly on `CGSessionCopyCurrentDictionary()` + workspace sleep state, and `AppController` / `FocusCoordinator` halt camera and AX operations when locked or asleep (T59, T78).",
+      "evidence": "guard let cfDict = CGSessionCopyCurrentDictionary(),\n      let dict = cfDict as? [String: Any] else {\n    return SessionSignals(dictionaryAvailable: false, onConsole: false, screenLocked: true, ...)",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-807: Reliance on Untrusted Inputs in a Security Decision",
+          "url": "https://cwe.mitre.org/data/definitions/807.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-001",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-002",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-1021",
+      "title": "CGWindowCatalogService drops layer != 0 windows, blinding hit-testing to modal and auth dialogs",
+      "file": "Sources/iFocusCore/Targeting/WindowClassifier.swift",
+      "start_line": 11,
+      "end_line": 90,
+      "rationale": "Remains closed and strengthened in Round 3 (RC3, AW8): `WindowClassifier` + `Config.promptOwnerNames` now also map `CoreAuthUI` to `com.apple.LocalAuthentication.UIAgent`, retain Spotlight (`layer > 0`) as an `.occluder`, and enforce global `.securityPrompt` vetoes across all displays (T60, T61, T62, T77, T85).",
+      "evidence": "\"coreautha\": \"com.apple.LocalAuthentication.UIAgent\",\n\"CoreAuthUI\": \"com.apple.LocalAuthentication.UIAgent\",",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-1021: Improper Restriction of Rendered UI Layers or Frames",
+          "url": "https://cwe.mitre.org/data/definitions/1021.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-002",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-003",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-863",
+      "title": "SafetyPolicy skips Config.hardBlocklist when requireAllowedSource is false and omits CoreAuthUI",
+      "file": "Sources/iFocusCore/Engine/SafetyPolicy.swift",
+      "start_line": 47,
+      "end_line": 52,
+      "rationale": "Remains closed and expanded for universal `allApps` mode in Round 3 (AW8, RC2): `DefaultSafetyGuardPolicy` and `Config.isBundleAllowed` unconditionally enforce `Config.isHardBlocked(_:)` (covering auth agents, System Settings, ScreenSharing, Spotlight, 1Password v7/v8, Apple Passwords, Bitwarden, Keychain Access, and `dev.ifocus.app` + runtime `Bundle.main.bundleIdentifier`), while nil/empty bundle IDs fail closed (T63, T84, T85).",
+      "evidence": "if let front = context.frontmostBundleID, Config.isHardBlocked(front) {\n    return .deny(.sourceNotAllowed)\n}",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-863: Incorrect Authorization",
+          "url": "https://cwe.mitre.org/data/definitions/863.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-003",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-004",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-379",
+      "title": "Build and app-signing scripts execute and sign binaries from predictable shared /tmp directories",
+      "file": "scripts/sbx.sh",
+      "start_line": 5,
+      "end_line": 22,
+      "rationale": "Remains closed in Round 3: `prepare_secure_dir()` and UID-scoped `/tmp` paths remain intact alongside the new CLT/Xcode toolchain probe (`AW4`), verified by `scripts/check-scripts.sh` (Gate G6).",
+      "evidence": "UID_NUM=\"$(id -u)\"\nOUT=\"${IFOCUS_SBX_OUT:-/tmp/ifocus-sbx-$UID_NUM}\"\nprepare_secure_dir \"$OUT\"",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-379: Creation of Temporary File in Directory with Insecure Permissions",
+          "url": "https://cwe.mitre.org/data/definitions/379.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-004",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-005",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-672",
+      "title": "Uninvalidated PID-keyed bundleIDCache misclassifies windows after macOS PID wraparound",
+      "file": "Sources/iFocusMac/Windows/CGWindowCatalogService.swift",
+      "start_line": 35,
+      "end_line": 60,
+      "rationale": "Remains closed in Round 3: `CGWindowCatalogService` resolves bundle IDs into a per-snapshot local dictionary with zero persistent PID cache.",
+      "evidence": "var pidBundleCache: [Int32: String?] = [:]",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-672: Operation on a Resource after Expiration or Release",
+          "url": "https://cwe.mitre.org/data/definitions/672.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-005",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-006",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-732",
+      "title": "SecureFileStore.read accepts group/world-writable config directories and uses path-based TOCTOU",
+      "file": "Sources/iFocusCore/Storage/SecureFileStore.swift",
+      "start_line": 57,
+      "end_line": 194,
+      "rationale": "Remains closed in Round 3: descriptor-pinned `O_DIRECTORY | O_NOFOLLOW` + `openat`/`renameat`/`unlinkat` and `0o077` directory permission rejection on `read()` remain intact (T34, T71).",
+      "evidence": "guard (dirStat.st_mode & 0o077) == 0 else {\n    throw SecureFileStoreError.insecureDirectory(\"\\(dirPath) has insecure group/other permissions\")\n}",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-732: Incorrect Permission Assignment for Critical Resource",
+          "url": "https://cwe.mitre.org/data/definitions/732.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-006",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-007",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-770",
+      "title": "FocusCoordinator appends unbounded DecisionLogEntry records at 20-30 Hz, leaking heap memory",
+      "file": "Sources/iFocusCore/Engine/FocusCoordinator.swift",
+      "start_line": 45,
+      "end_line": 80,
+      "rationale": "Remains closed in Round 3: `FocusCoordinator.decisionLog` remains bounded at 4096 entries via `RingBuffer` (T64).",
+      "evidence": "private struct RingBuffer {\n    private var storage: [DecisionLogEntry?]",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-770: Allocation of Resources Without Limits or Throttling",
+          "url": "https://cwe.mitre.org/data/definitions/770.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-007",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-008",
+      "severity": "P3",
+      "axis": "security",
+      "rule": "CWE-636",
+      "title": "Cancelling or failing interactive calibration silently clears user pause state and starts camera",
+      "file": "Sources/iFocusMac/App/AppController.swift",
+      "start_line": 317,
+      "end_line": 374,
+      "rationale": "Remains closed in Round 3: `AppController.runInteractiveCalibration()` preserves and restores `wasPaused` across all exit paths.",
+      "evidence": "let wasPaused = await coordinator.paused()\n...\nawait coordinator.setPaused(wasPaused)",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-636: Not Failing Securely ('Failing Open')",
+          "url": "https://cwe.mitre.org/data/definitions/636.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-008",
+      "security_verdict": "confirmed"
+    }
+  ]
+}

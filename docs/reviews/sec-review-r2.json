@@ -1,0 +1,276 @@
+{
+  "schema_version": "1",
+  "producer": "security-review",
+  "mode": "repo",
+  "summary": "Round 2 security review and regression audit of commit ddc3550 verified all 8 prior security findings (SEC-001..SEC-008 / TRG-04..07, TRG-12, TRG-17, TRG-18, TRG-26) and security-adjacent lifecycle/AX items (TRG-01..03, TRG-08, TRG-09) are closed without regressions, with 0 open P0-P3 findings.",
+  "inspected": [
+    ".gitignore",
+    "Package.swift",
+    "README.md",
+    "Resources/Info.plist",
+    "Resources/iFocus.entitlements",
+    "scripts/sbx.sh",
+    "scripts/bundle-app.sh",
+    "scripts/check-invariants.sh",
+    "scripts/check-scripts.sh",
+    "Sources/iFocusApp/IFocusCLI.swift",
+    "Sources/iFocusCore/Calibration/CalibrationMapper.swift",
+    "Sources/iFocusCore/Calibration/CalibrationProfile.swift",
+    "Sources/iFocusCore/Calibration/CalibrationSession.swift",
+    "Sources/iFocusCore/Calibration/CalibrationSolver.swift",
+    "Sources/iFocusCore/Calibration/RidgeSolver.swift",
+    "Sources/iFocusCore/Engine/FocusCoordinator.swift",
+    "Sources/iFocusCore/Engine/FocusDecisionEngine.swift",
+    "Sources/iFocusCore/Engine/FocusPipeline.swift",
+    "Sources/iFocusCore/Engine/LadderFocusSwitcher.swift",
+    "Sources/iFocusCore/Engine/SafetyPolicy.swift",
+    "Sources/iFocusCore/Engine/WatchedStream.swift",
+    "Sources/iFocusCore/Filter/EyeGeometry.swift",
+    "Sources/iFocusCore/Filter/FrameDecimator.swift",
+    "Sources/iFocusCore/Filter/GazeFeaturePipeline.swift",
+    "Sources/iFocusCore/Filter/OneEuroFilter.swift",
+    "Sources/iFocusCore/Geometry/CoordinateSpace.swift",
+    "Sources/iFocusCore/Model/Config.swift",
+    "Sources/iFocusCore/Model/DisplayTypes.swift",
+    "Sources/iFocusCore/Model/FocusTypes.swift",
+    "Sources/iFocusCore/Model/GazeTypes.swift",
+    "Sources/iFocusCore/Model/InputTypes.swift",
+    "Sources/iFocusCore/Model/SessionActivity.swift",
+    "Sources/iFocusCore/Model/WindowTypes.swift",
+    "Sources/iFocusCore/Protocols/Services.swift",
+    "Sources/iFocusCore/Simulation/Presets.swift",
+    "Sources/iFocusCore/Simulation/Scenario.swift",
+    "Sources/iFocusCore/Simulation/ScenarioRunner.swift",
+    "Sources/iFocusCore/Simulation/SeededRNG.swift",
+    "Sources/iFocusCore/Simulation/SimRig.swift",
+    "Sources/iFocusCore/Simulation/SimServices.swift",
+    "Sources/iFocusCore/Simulation/SyntheticUser.swift",
+    "Sources/iFocusCore/Storage/ConfigStore.swift",
+    "Sources/iFocusCore/Storage/ProfileStore.swift",
+    "Sources/iFocusCore/Storage/SecureFileStore.swift",
+    "Sources/iFocusCore/Targeting/AXWindowMatcher.swift",
+    "Sources/iFocusCore/Targeting/WindowClassifier.swift",
+    "Sources/iFocusCore/Targeting/WindowHitTester.swift",
+    "Sources/iFocusMac/App/AppController.swift",
+    "Sources/iFocusMac/App/Doctor.swift",
+    "Sources/iFocusMac/App/Permissions.swift",
+    "Sources/iFocusMac/App/SystemClock.swift",
+    "Sources/iFocusMac/Display/CGDisplayTopologyService.swift",
+    "Sources/iFocusMac/Focus/AXActuator.swift",
+    "Sources/iFocusMac/Focus/AXWindowID.swift",
+    "Sources/iFocusMac/Gaze/CameraSession.swift",
+    "Sources/iFocusMac/Gaze/FrameProcessor.swift",
+    "Sources/iFocusMac/Gaze/VisionGazeEstimator.swift",
+    "Sources/iFocusMac/Input/SystemInputActivityProvider.swift",
+    "Sources/iFocusMac/Input/SystemSessionStateProvider.swift",
+    "Sources/iFocusMac/UI/CalibrationOverlay.swift",
+    "Sources/iFocusMac/UI/HUDController.swift",
+    "Sources/iFocusMac/UI/HotKeyController.swift",
+    "Sources/iFocusMac/UI/StatusMenuController.swift",
+    "Sources/iFocusMac/Windows/CGWindowCatalogService.swift",
+    "Tests/iFocusCoreTests/AXMatchTests.swift",
+    "Tests/iFocusCoreTests/CoordinatorTests.swift",
+    "Tests/iFocusCoreTests/EngineTests.swift",
+    "Tests/iFocusCoreTests/FeaturePipelineTests.swift",
+    "Tests/iFocusCoreTests/FileStoreTests.swift",
+    "Tests/iFocusCoreTests/HitTestTests.swift",
+    "Tests/iFocusCoreTests/LadderTests.swift",
+    "Tests/iFocusCoreTests/SafetyTests.swift",
+    "Tests/iFocusCoreTests/ScenarioTests.swift",
+    "Tests/iFocusCoreTests/TestDoubles.swift",
+    "gitleaks",
+    "trivy"
+  ],
+  "not_inspected": [
+    {
+      "what": "semgrep",
+      "reason": "exit 2: Called from Dune__exe__Main.(fun) in file \"src/main/Main.ml\", line 114, characters 22-35 | Called from Pyro_caml_instruments.maybe_with_memprof_sampler in file \"lib/Pyro_caml_instruments.ml\" (inlined), line 114, characters 49-53 | Called from Dune__exe__Main in file \"src/main/Main.ml\", lines 105-127"
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-001",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-807",
+      "title": "Webcam and AX tracking reactivate while locked on screen-wake or spoofed DistributedNotification",
+      "file": "Sources/iFocusMac/Input/SystemSessionStateProvider.swift",
+      "start_line": 26,
+      "end_line": 195,
+      "rationale": "Closed in Round 2 (TRG-04): `SystemSessionStateProvider` queries `CGSessionCopyCurrentDictionary()` on init, on workspace/distributed notifications (treating `DistributedNotificationCenter` events solely as re-poll hints), and on `0.25s`-TTL `isSessionActive()` checks, failing closed when the dictionary is unavailable or `CGSSessionScreenIsLocked == true`, while `AppController.runCalibrateCommand()` (`AppController.swift:42-63`) and `FocusCoordinator.supervise` (`FocusCoordinator.swift:289-298`) gate and abort camera capture on inactive sessions (proven by T59 and T78).",
+      "evidence": "guard let cfDict = CGSessionCopyCurrentDictionary(),\n      let dict = cfDict as? [String: Any] else {\n    return SessionSignals(dictionaryAvailable: false, onConsole: false, screenLocked: true, ...)\n}\nlet onConsole = (dict[kCGSessionOnConsoleKey as String] as? Bool) ?? true\nlet screenLocked = (dict[\"CGSSessionScreenIsLocked\"] as? Bool) ?? false",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-807: Reliance on Untrusted Inputs in a Security Decision",
+          "url": "https://cwe.mitre.org/data/definitions/807.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-001",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-002",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-1021",
+      "title": "CGWindowCatalogService drops layer != 0 windows, blinding hit-testing to modal and auth dialogs",
+      "file": "Sources/iFocusCore/Targeting/WindowClassifier.swift",
+      "start_line": 11,
+      "end_line": 90,
+      "rationale": "Closed in Round 2 (TRG-05): `CGWindowCatalogService` classifies all on-screen windows via `WindowClassifier` (with `kCGWindowOwnerName` fallback for unbundled security agents like `coreautha`), retaining `layer > 0` dialogs/panels as `.occluder` windows (`WindowHitTester.isEligible` requires `window.layer == 0`) and elevating `SecurityAgent`, `CoreAuthUI`, `UserNotificationCenter`, `CoreServicesUIAgent`, and `loginwindow` (`layer >= 1000`) to global `.securityPrompt` vetoes in both `step()` and `confirm()` (proven by T60, T61, T62, T77, and live G7 `--doctor`).",
+      "evidence": "if let bundleID, Config.securityPromptBundleIDs.contains(bundleID), bounds.width >= 40, bounds.height >= 40 {\n    return .securityPrompt\n}\nif bundleID == \"com.apple.loginwindow\", layer >= 1000, bounds.width >= 40, bounds.height >= 40 {\n    return .securityPrompt\n}",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-1021: Improper Restriction of Rendered UI Layers or Frames",
+          "url": "https://cwe.mitre.org/data/definitions/1021.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-002",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-003",
+      "severity": "P1",
+      "axis": "security",
+      "rule": "CWE-863",
+      "title": "SafetyPolicy skips Config.hardBlocklist when requireAllowedSource is false and omits CoreAuthUI",
+      "file": "Sources/iFocusCore/Engine/SafetyPolicy.swift",
+      "start_line": 47,
+      "end_line": 52,
+      "rationale": "Closed in Round 2 (TRG-06): `DefaultSafetyGuardPolicy.evaluate(_:)` unconditionally denies switching when `frontmostBundleID` belongs to `Config.hardBlocklist` regardless of `requireAllowedSource`, and `Config.hardBlocklist` (`Config.swift:16-31`) now includes `com.apple.LocalAuthentication.UIAgent`, `com.apple.UserNotificationCenter`, `com.apple.ScreenSharing`, and `com.apple.Settings` (proven by T63).",
+      "evidence": "if let front = context.frontmostBundleID, Config.hardBlocklist.contains(front) {\n    return .deny(.sourceNotAllowed)\n}",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-863: Incorrect Authorization",
+          "url": "https://cwe.mitre.org/data/definitions/863.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-003",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-004",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-379",
+      "title": "Build and app-signing scripts execute and sign binaries from predictable shared /tmp directories",
+      "file": "scripts/sbx.sh",
+      "start_line": 5,
+      "end_line": 22,
+      "rationale": "Closed in Round 2 (TRG-17): `scripts/sbx.sh` and `scripts/bundle-app.sh` default all scratch and module-cache paths to UID-scoped directories (`-$(id -u)`) and enforce `prepare_secure_dir()` (trailing-slash normalisation, symlink refusal `-L`, regular-file refusal, `mkdir -p -m 0700`, UID ownership check `-O`, and `chmod 0700`), verified automatically by `scripts/check-scripts.sh` (Gate G6).",
+      "evidence": "if [ -L \"$d\" ]; then echo \"refusing symlink: $d\" >&2; exit 1; fi\nmkdir -p -m 0700 \"$d\"\nif [ -L \"$d\" ] || [ ! -d \"$d\" ] || [ ! -O \"$d\" ]; then echo \"refusing unowned or replaced directory: $d\" >&2; exit 1; fi\nchmod 0700 \"$d\"",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-379: Creation of Temporary File in Directory with Insecure Permissions",
+          "url": "https://cwe.mitre.org/data/definitions/379.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-004",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-005",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-672",
+      "title": "Uninvalidated PID-keyed bundleIDCache misclassifies windows after macOS PID wraparound",
+      "file": "Sources/iFocusMac/Windows/CGWindowCatalogService.swift",
+      "start_line": 35,
+      "end_line": 60,
+      "rationale": "Closed in Round 2 (TRG-12): Persistent actor-level `bundleIDCache` has been removed and replaced with a per-`detailedSnapshot()` local `var pidBundleCache: [Int32: String?] = [:]`, eliminating stale PID-wraparound inheritance and unbounded cache growth.",
+      "evidence": "// TRG-12: local per-snapshot PID cache avoids PID-wraparound stale bundle IDs.\nvar pidBundleCache: [Int32: String?] = [:]",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-672: Operation on a Resource after Expiration or Release",
+          "url": "https://cwe.mitre.org/data/definitions/672.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-005",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-006",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-732",
+      "title": "SecureFileStore.read accepts group/world-writable config directories and uses path-based TOCTOU",
+      "file": "Sources/iFocusCore/Storage/SecureFileStore.swift",
+      "start_line": 57,
+      "end_line": 194,
+      "rationale": "Closed in Round 2 (TRG-18): `SecureFileStore.read` and `write` pin a directory descriptor with `open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)` (catching Darwin's `ENOTDIR` symlink return), reject `(dirStat.st_mode & 0o077) != 0` on `read`, repair permissions via `fchmod(dirFD, ...)` on `write`, and execute `openat`, `renameat`, and `unlinkat` relative to `dirFD` (proven by T34 and T71).",
+      "evidence": "guard (dirStat.st_mode & 0o077) == 0 else {\n    throw SecureFileStoreError.insecureDirectory(\"\\(dirPath) has insecure group/other permissions\")\n}\nlet fd = openat(dirFD, filename, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-732: Incorrect Permission Assignment for Critical Resource",
+          "url": "https://cwe.mitre.org/data/definitions/732.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-006",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-007",
+      "severity": "P2",
+      "axis": "security",
+      "rule": "CWE-770",
+      "title": "FocusCoordinator appends unbounded DecisionLogEntry records at 20-30 Hz, leaking heap memory",
+      "file": "Sources/iFocusCore/Engine/FocusCoordinator.swift",
+      "start_line": 45,
+      "end_line": 80,
+      "rationale": "Closed in Round 2 (TRG-07): `FocusCoordinator.decisionLog` is now a pre-allocated O(1) `RingBuffer` bounded at `maxDecisionLogEntries = 4096` (proven by T64 while preserving T38).",
+      "evidence": "private struct RingBuffer {\n    private var storage: [DecisionLogEntry?]\n    private var head: Int = 0\n    private(set) var count: Int = 0\n    let capacity: Int",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-770: Allocation of Resources Without Limits or Throttling",
+          "url": "https://cwe.mitre.org/data/definitions/770.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-007",
+      "security_verdict": "confirmed"
+    },
+    {
+      "id": "SEC-008",
+      "severity": "P3",
+      "axis": "security",
+      "rule": "CWE-636",
+      "title": "Cancelling or failing interactive calibration silently clears user pause state and starts camera",
+      "file": "Sources/iFocusMac/App/AppController.swift",
+      "start_line": 316,
+      "end_line": 373,
+      "rationale": "Closed in Round 2 (TRG-26): `AppController.runInteractiveCalibration()` captures `let wasPaused = await coordinator.paused()` prior to pausing/stopping the coordinator and restores `await coordinator.setPaused(wasPaused)` on every exit path (permission denial, locked session, cancellation, error, and completion).",
+      "evidence": "let wasPaused = await coordinator.paused()\n...\nawait coordinator.setPaused(wasPaused)\nawait startTrackingIfReady()",
+      "suggestion": "",
+      "references": [
+        {
+          "title": "CWE-636: Not Failing Securely ('Failing Open')",
+          "url": "https://cwe.mitre.org/data/definitions/636.html"
+        }
+      ],
+      "confidence": "high",
+      "status": "fixed",
+      "prior_id": "SEC-008",
+      "security_verdict": "confirmed"
+    }
+  ]
+}

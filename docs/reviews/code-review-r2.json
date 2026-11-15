@@ -1,0 +1,38 @@
+{
+  "round": 2,
+  "reviewer": "code-reviewer",
+  "commit": "ddc35505ba8e1402cce15f80f2448d1e87ff23f7",
+  "builder_post": 22,
+  "gates": {
+    "test": {"command": "IFOCUS_SBX_OUT=/tmp/ifocus-cr-r2 ./scripts/sbx.sh test", "result": "78 tests in 17 suites passed", "warnings": 0},
+    "invariants": "All invariants passed",
+    "simulate": "5/5 PASS, exit 0"
+  },
+  "probes": {
+    "source": "~/.gemini/jetski/brain/18342d6b-008a-40b6-8c3c-57130d197f10/scratch/probe/main_r2.swift",
+    "P1": "notFound (was ambiguous in R1)",
+    "P2": "1-in-6 neighbour outliers -> commit at 0.45 s (was NEVER in R1)",
+    "P2c_P2d": "1-in-3 and 1-in-2 neighbour outliers -> NEVER (residual, CR2-01)",
+    "P3": "start();stop() -> starts=0 stops=1 live=false (was live=true in R1)",
+    "P4": "start during slow stop -> no hang; final stop leaves live=false",
+    "P5": "20x toggle -> live=false"
+  },
+  "verdict": "no_p0_p1_p2",
+  "counts": {"P0": 0, "P1": 0, "P2": 0, "P3": 5},
+  "closures": {
+    "TRG-01": "closed", "TRG-02": "closed", "TRG-03": "closed", "TRG-07": "closed", "TRG-08": "closed",
+    "TRG-09": "closed", "TRG-10": "closed", "TRG-11": "closed", "TRG-12": "closed", "TRG-13": "closed",
+    "TRG-14": "closed", "TRG-15": "closed", "TRG-16": "closed", "TRG-19": "closed", "TRG-20": "closed",
+    "TRG-21": "closed", "TRG-22": "closed", "TRG-23": "closed", "TRG-24": "closed", "TRG-25": "closed",
+    "TRG-26": "closed", "TRG-27": "closed", "TRG-28": "closed",
+    "TRG-04_05_06": "spot-checked code-level only; sec-reviewer owns sign-off",
+    "DEF-01": "deferred_v2", "DEF-02": "deferred_v2"
+  },
+  "findings": [
+    {"id": "CR2-01", "severity": "P3", "axis": "ux_dwell", "file": "Sources/iFocusCore/Engine/FocusDecisionEngine.swift", "lines": "242-250", "title": "no-commit-while-challenger-live still starves at >=1-in-3 neighbour outliers (fails safe)", "evidence": "probes P2c/P2d", "fix": "v2: majority-share commit rule tuned on recorded traces"},
+    {"id": "CR2-02", "severity": "P3", "axis": "robustness", "file": "Sources/iFocusMac/Focus/AXActuator.swift", "lines": "31-60", "title": "0.5 s enumeration budget returns [] wholesale and reads geometry even when IDs resolve", "fix": "IDs first with early exit; geometry only for nil-ID candidates; return partial list on budget"},
+    {"id": "CR2-03", "severity": "P3", "axis": "ux_safety", "file": "Sources/iFocusCore/Engine/LadderFocusSwitcher.swift", "lines": "113-115", "title": ".staleCandidate exit skips rollback after an earlier rung acted", "fix": "call rollbackIfNeeded before returning .failed(.staleCandidate); extend T66"},
+    {"id": "CR2-04", "severity": "P3", "axis": "performance", "file": "Sources/iFocusMac/Input/SystemSessionStateProvider.swift", "lines": "131-149", "title": "applyActive enqueues a MainActor heartbeat task on every refresh (~4 Hz)", "fix": "only on state change or first refresh"},
+    {"id": "CR2-05", "severity": "P3", "axis": "hit_testing", "file": "Sources/iFocusCore/Targeting/WindowClassifier.swift", "lines": "63-65", "title": "chrome-ignored Dock/notification regions let gaze reach terminals beneath", "fix": "occlude visible chrome sub-rects or document as known limit"}
+  ]
+}
