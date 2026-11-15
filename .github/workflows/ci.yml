@@ -1,0 +1,43 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  macos:
+    name: Build and test (macOS)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select the newest installed Xcode
+        run: |
+          newest="$(find /Applications -maxdepth 1 -type d -name 'Xcode_*.app' ! -name '*[Bb]eta*' | sort -V | tail -n 1)"
+          if [ -n "$newest" ]; then
+            echo "DEVELOPER_DIR=$newest/Contents/Developer" >> "$GITHUB_ENV"
+            echo "Selected $newest"
+          else
+            echo "No versioned Xcode found; keeping the runner default"
+          fi
+      - name: Show toolchain
+        run: |
+          xcode-select -p
+          swift --version
+      - name: Architecture and security invariants
+        run: ./scripts/check-invariants.sh
+      - name: Script hardening
+        run: ./scripts/check-scripts.sh
+      - name: swift build
+        run: swift build
+      - name: swift test
+        run: swift test
+      - name: Direct swiftc build and test (sbx.sh)
+        run: ./scripts/sbx.sh test
